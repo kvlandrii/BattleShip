@@ -131,64 +131,73 @@ function createShipSquares(shipCoordinates, battleField)
 function createShotAccess(battleField, computerShipCoordinates, userShipCoordinates)
 {
     const shotPlaces = getArray(10, 10);
-    var userHits = 0;
-    var computerHits = 0;
+    var userScore = 0;
+    var computerScore = 0;
 
-    for (let x = 0; x < 10; x++)
+    battleField.addEventListener('click', doShot)
+
+    function doShot(e)
     {
-        for (let y = 0; y < 10; y++)
-        {
-            const squareClass = "." + getSquareClass(x, y);
-            const square = battleField.querySelector(squareClass);
-
-            square.addEventListener("click", 
-                function doShot() {
-                    this.style.backgroundColor = computerShipCoordinates[x][y] ? "#ffa3a3" : "#b3b3ff";
-                    userHits = computerShipCoordinates[x][y] ? (userHits + 1) : userHits;
-                    if(userHits == 20)
-                    {
-                        whoWinner(".player-side");
-                    } 
-                    this.removeEventListener("click", doShot);
-
-                    computerHits = computerTurn(shotPlaces, userShipCoordinates, computerHits);
-                }
-            );
-        }
+        var pos = getPosition(e.target.classList[1]);
+        var shot = isHit(computerShipCoordinates[pos.x][pos.y]);
+        e.target.style.backgroundColor = shot.color;
+        userScore = hitCounter(userScore, shot.hit).score;
+        winner(userScore, '.player-side');
+        computerTurn();
     }
-}
 
-function computerTurn(shotPlaces, userShipCoordinates, computerHits)
-{
-    let hit = true;
-    while(hit)
+    function computerTurn()
     {
-        var randomPosition = getRandomPosition();
-        if(!shotPlaces[randomPosition.x][randomPosition.y])
+        let hit = true;
+        while(hit)
         {
-            const randomSquare = "." + getSquareClass(randomPosition.x, randomPosition.y);
-            const field = getContainer("player-grid-container");
-            const square = field.querySelector(randomSquare);
-            square.style.backgroundColor = userShipCoordinates[randomPosition.x][randomPosition.y] ? "#ffa3a3" : "#b3b3ff";
-            shotPlaces[randomPosition.x][randomPosition.y] = true;
-            computerHits = userShipCoordinates[randomPosition.x][randomPosition.y] ? (computerHits + 1) : computerHits;
-            if(computerHits == 20)
+            var randomPosition = getRandomPosition();
+            if(!shotPlaces[randomPosition.x][randomPosition.y])
             {
-                whoWinner(".computer-side");
+                const randomSquare = "." + getSquareClass(randomPosition.x, randomPosition.y);
+                const field = getContainer("player-grid-container");
+                const square = field.querySelector(randomSquare);
+                var shot = isHit(userShipCoordinates[randomPosition.x][randomPosition.y]);
+                square.style.backgroundColor = shot.color;
+                shotPlaces[randomPosition.x][randomPosition.y] = true;
+                computerScore = hitCounter(computerScore, shot.hit).score;
+                winner(computerScore, '.computer-side');
+                hit = false;
             }
-            hit = false;
         }
     }
-    return computerHits;
-}
 
+    function hitCounter(score, hit)
+    {
+        return {score: hit ? (score + 1) : score}
+    }
 
-function whoWinner(s)
-{
-    const side = document.querySelector(s);
-    const winnerMsg = document.createElement("div");
-    winnerMsg.innerHTML = "WINNER";
-    side.appendChild(winnerMsg);
+    function winner(score, s)
+    {
+        if(score == 20){
+            const side = document.querySelector(s);
+            const winnerMsg = document.createElement("div");
+            winnerMsg.innerHTML = "WINNER";
+            side.appendChild(winnerMsg);
+            battleField.removeEventListener('click', doShot)
+        }
+    }
+
+    function getPosition(sqr)
+    {
+        return { 
+            x: sqr[7],
+            y: sqr[9]
+        }
+    }
+
+    function isHit(hit)
+    {
+        return { 
+            color: hit ? "#ffa3a3" : "#b3b3ff",
+            hit : hit
+        }
+    }
 }
 
 function createShips()
