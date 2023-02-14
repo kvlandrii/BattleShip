@@ -208,7 +208,6 @@ function createShips()
     var userBattleField = getContainer("player-grid-container");
     var computerBattleField = getContainer("computer-grid-container");
     createShipSquares(userShipCoordinates, userBattleField);
-    //createShipSquares(computerShipCoordinates, computerBattleField);
     createShotAccess(computerBattleField, computerShipCoordinates, userShipCoordinates);
 }
 
