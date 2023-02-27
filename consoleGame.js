@@ -10,15 +10,6 @@ function getArray(x, y)
 
 const game = {
 
-    getRandomPosition: function() 
-    {
-        return { 
-            x : Math.floor(Math.random() * 10),
-            y : Math.floor(Math.random() * 10),
-            isHorizontal : isHorizontal = Math.random() > 0.5 
-        }
-    },
-
     isHit: function(coordinates, x, y)
     {
         return coordinates[x][y]
@@ -26,11 +17,7 @@ const game = {
 
     isWinner: function()
     {
-        if(userScore == 20)
-        {
-            return true;
-        }
-        else if(computerScore == 20)
+        if(userScore.score == 20 || computerScore.score == 20)
         {
             return true;
         }
@@ -38,67 +25,17 @@ const game = {
 
     addScore: function(score)
     {
-        return ++score
+        return ++score.score
     },
 
-    computerTurn: function()
+    turn: function(shipCoordinates, x, y, shotPlaces, score)
     {
-        let hit = true;
-        while(hit){
-            let randPos = game.getRandomPosition();
-            let position = computerShotPlaces[randPos.x][randPos.y];
-            if(!game.isWrongPosition(position))
-            {
-                game.markUsedPlace(computerShotPlaces, randPos.x, randPos.y);
-                render.computerShotInfoMsg(randPos.x, randPos.y);
-                if(game.isHit(userShipCoordinates, randPos.x, randPos.y))
-                {
-                    render.hitMsg();
-                    computerScore = game.addScore(computerScore);
-                }
-                hit = false;
-            }
-        }
-    },
-
-    playerTurn: function()
-    {
-        while(true)
+        game.markUsedPlace(shotPlaces, x, y);
+        if(game.isHit(shipCoordinates, x, y))
         {
-            let shot = prompt(render.windowMsg());
-            let position = userShotPlaces[shot[0]][shot[1]];
-            if(!game.isWrongPosition(position))
-            {
-                game.markUsedPlace(userShotPlaces, shot[0], shot[1]);
-                render.userShotInfoMsg(shot);
-                if(game.isHit(computerShipCoordinates, shot[0], shot[1]))
-                {
-                    render.hitMsg();
-                    userScore = game.addScore(userScore);
-                    if(game.isWinner())
-                    {
-                        render.userWonMsg();
-                        return; 
-                    }
-                }
-                game.computerTurn();
-                if(game.isWinner())
-                {
-                    render.computerWonMsg();
-                    return;
-                }
-                render.scoreBoard();
-            }
-            else
-            {
-                render.wrongPositionMsg();
-            }
+            game.addScore(score);
+            return true;
         }
-    },
-
-    isWrongPosition: function(pos)
-    {
-        return pos;
     },
 
     markUsedPlace: function(field, x, y)
@@ -126,7 +63,7 @@ const game = {
                 retry = false;
                 let tempCoordinates = [];
 
-                let position = game.getRandomPosition();
+                let position = main.getRandomPosition();
                 
                 for (let length = 0; length < squaresCount[ship]; length++)
                 {
@@ -200,12 +137,12 @@ const render = {
 
     scoreBoard: function()
     {
-        console.log(`---------  ${userScore}  ---  ${computerScore}  ---------`);
+        console.log(`---------  ${userScore.score}  ---  ${computerScore.score}  ---------`);
     },
 
-    userShotInfoMsg: function(shot)
+    userShotInfoMsg: function(x, y)
     {
-        console.log(`You did shot [${shot[0]}][${shot[1]}]`);
+        console.log(`You did shot [${x}][${y}]`);
     },
 
     computerShotInfoMsg: function(x, y)
@@ -216,15 +153,134 @@ const render = {
     windowMsg: function()
     {
         return 'Enter coordinates to shot\nFor example:\nEnter \'24\' to shot [2][4] position:'
+    },
+
+    missMsg: function()
+    {
+        console.log(`MISS`);
     }
+}
+
+const main = {
+
+    play: function()
+    {
+        main.userTurn();
+        while(true)
+        {
+            switch(isPlayerTurn.turn)
+            {
+                case true:
+                    main.userTurn();
+                    break;
+
+                case false:
+                    main.computerTurn();
+                    break;
+            }
+
+            render.scoreBoard();
+            
+            if(game.isWinner())
+            {
+                userScore.score == 20 ? render.userWonMsg() : render.computerWonMsg();
+                return;
+            }
+        }
+    },
+
+    userTurn: function()
+    {
+        let userShot = main.getUserShotPosition();
+        render.userShotInfoMsg(userShot.x, userShot.y);
+        if(game.turn(userShipCoordinates, userShot.x, userShot.y, userShotPlaces, userScore))
+        {
+            isPlayerTurn.turn = true;
+            render.hitMsg();
+        }
+        else 
+        {
+            isPlayerTurn.turn = false;
+            render.missMsg();
+        }
+    },
+
+    computerTurn: function()
+    {
+        let computerShot = main.getEmptyPosition();
+        render.computerShotInfoMsg(computerShot.x, computerShot.y);
+        if(game.turn(computerShipCoordinates, computerShot.x, computerShot.y, computerShotPlaces, computerScore))
+        {
+            isPlayerTurn.turn = false;
+            render.hitMsg();
+        }
+        else 
+        {
+            isPlayerTurn.turn = true;
+            render.missMsg();
+        }
+    },
+
+    getUserShotPosition: function()
+    {
+        while(true)
+        {
+            let input = prompt(render.windowMsg());
+            let position = userShotPlaces[input[0]][input[1]];
+            if(!main.isWrongPosition(position))
+            {
+                game.markUsedPlace(userShotPlaces, input[0], input[1]);
+                return {
+                    x: parseInt(input[0]),
+                    y: parseInt(input[1])
+                };
+            }
+            else
+            {
+                render.wrongPositionMsg();
+            }
+        }
+    },
+
+    getEmptyPosition: function()
+    {
+        while(true)
+        {
+            let randPos = main.getRandomPosition();
+            let position = computerShotPlaces[randPos.x][randPos.y];
+            if(!main.isWrongPosition(position))
+            {
+                game.markUsedPlace(computerShotPlaces, randPos.x, randPos.y);
+                return {
+                    x: randPos.x,
+                    y: randPos.y
+                }
+            }
+        }
+    },
+
+    isWrongPosition: function(pos)
+    {
+        return pos;
+    },
+
+    getRandomPosition: function() 
+    {
+        return { 
+            x : Math.floor(Math.random() * 10),
+            y : Math.floor(Math.random() * 10),
+            isHorizontal : isHorizontal = Math.random() > 0.5 
+        }
+    },
 }
 
 const squaresCount = [4, 3, 3, 2, 2, 2, 1, 1, 1, 1];
 const userShipCoordinates = game.createShipCoordinates(squaresCount);
 const computerShipCoordinates = game.createShipCoordinates(squaresCount);
-var userScore = 0;
-var computerScore = 0;
+var userScore = {score: 0};
+var computerScore = {score: 0};
 const computerShotPlaces = getArray(10, 10);
 const userShotPlaces = getArray(10, 10);
+var isPlayerTurn = {turn: false};
 
-game.playerTurn();
+main.play();
