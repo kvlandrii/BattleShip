@@ -12,13 +12,13 @@ function createGrid(container)
         {
             var item = document.createElement("div");
             item.className = "square ";
-            item.className += getShipPartClass(i , j);
+            item.className += getSquareClass(i , j);
             container.appendChild(item);
         }
     }
 }
 
-function getShipPartClass(x, y)
+function getSquareClass(x, y)
 {
     return `square-${x}-${y} `;
 }
@@ -28,7 +28,7 @@ function getContainer(id)
     return document.getElementById(id);
 }
 
-function getShipRandomPosition() 
+function getRandomPosition() 
 {
     return { 
         x : Math.floor(Math.random() * 10),
@@ -67,7 +67,7 @@ function createShipCoordinates(squaresCount)
             retry = false;
             let tempCoordinates = [];
 
-            var position = getShipRandomPosition();
+            var position = getRandomPosition();
             
             for (let length = 0; length < squaresCount[ship]; length++)
             {
@@ -118,8 +118,8 @@ function createShipSquares(shipCoordinates, battleField)
     {
         for (let y = 0; y < 10; y++)
         {
-            const shipPartClass = '.' + getShipPartClass(x, y);
-            const square = battleField.querySelector(shipPartClass);
+            const squareClass = '.' + getSquareClass(x, y);
+            const square = battleField.querySelector(squareClass);
             if (shipCoordinates[x][y])
             {
                 square.className += "square-ship ";
@@ -128,16 +128,87 @@ function createShipSquares(shipCoordinates, battleField)
     }
 }
 
+function createShotAccess(battleField, computerShipCoordinates, userShipCoordinates)
+{
+    const shotPlaces = getArray(10, 10);
+    var userScore = 0;
+    var computerScore = 0;
+
+    battleField.addEventListener('click', doShot)
+
+    function doShot(e)
+    {
+        var pos = getPosition(e.target.classList[1]);
+        var shot = isHit(computerShipCoordinates[pos.x][pos.y]);
+        e.target.style.backgroundColor = shot.color;
+        userScore = hitCounter(userScore, shot.hit).score;
+        winner(userScore, '.player-side');
+        computerTurn();
+    }
+
+    function computerTurn()
+    {
+        let hit = true;
+        while(hit)
+        {
+            var randomPosition = getRandomPosition();
+            if(!shotPlaces[randomPosition.x][randomPosition.y])
+            {
+                const randomSquare = "." + getSquareClass(randomPosition.x, randomPosition.y);
+                const field = getContainer("player-grid-container");
+                const square = field.querySelector(randomSquare);
+                var shot = isHit(userShipCoordinates[randomPosition.x][randomPosition.y]);
+                square.style.backgroundColor = shot.color;
+                shotPlaces[randomPosition.x][randomPosition.y] = true;
+                computerScore = hitCounter(computerScore, shot.hit).score;
+                winner(computerScore, '.computer-side');
+                hit = false;
+            }
+        }
+    }
+
+    function hitCounter(score, hit)
+    {
+        return {score: hit ? (score + 1) : score}
+    }
+
+    function winner(score, s)
+    {
+        if(score == 20){
+            const side = document.querySelector(s);
+            const winnerMsg = document.createElement("div");
+            winnerMsg.innerHTML = "WINNER";
+            side.appendChild(winnerMsg);
+            battleField.removeEventListener('click', doShot)
+        }
+    }
+
+    function getPosition(sqr)
+    {
+        return { 
+            x: sqr[7],
+            y: sqr[9]
+        }
+    }
+
+    function isHit(hit)
+    {
+        return { 
+            color: hit ? "#ffa3a3" : "#b3b3ff",
+            hit : hit
+        }
+    }
+}
+
 function createShips()
 {
-
     var squaresCount = [4, 3, 3, 2, 2, 2, 1, 1, 1, 1];
     var userShipCoordinates = createShipCoordinates(squaresCount);
     var computerShipCoordinates = createShipCoordinates(squaresCount);
     var userBattleField = getContainer("player-grid-container");
     var computerBattleField = getContainer("computer-grid-container");
     createShipSquares(userShipCoordinates, userBattleField);
-    createShipSquares(computerShipCoordinates, computerBattleField);
+    createShotAccess(computerBattleField, computerShipCoordinates, userShipCoordinates);
 }
 
 function startSinglePlayerMode()

@@ -78,10 +78,6 @@ body{
     width: 4vh;
 }
 
-.square-shot:hover{
-    background-color: #d3d3d3;
-}
-
 .square-ship{
     border: 1px dashed gray;
     background-color: #48e42883;
